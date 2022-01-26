@@ -3,19 +3,10 @@ package db
 import (
 	"context"
 	"database/sql"
-	"math/rand"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
-
-const alphabet = "abcdefghijklmnopqrstuvwxyz"
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func TestCreateAccount(t *testing.T) {
 	createRandomAccount(t)
@@ -27,11 +18,11 @@ func TestGetAccount(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotEmpty(t, queriedAcc)
-	require.Equal(t, queriedAcc.ID, createdAcc.ID)
-	require.Equal(t, queriedAcc.Owner, createdAcc.Owner)
-	require.Equal(t, queriedAcc.Balance, createdAcc.Balance)
-	require.Equal(t, queriedAcc.CreatedAt, createdAcc.CreatedAt)
-	require.Equal(t, queriedAcc.Currency, createdAcc.Currency)
+	require.Equal(t, createdAcc.ID, queriedAcc.ID)
+	require.Equal(t, createdAcc.Owner, queriedAcc.Owner)
+	require.Equal(t, createdAcc.Balance, queriedAcc.Balance)
+	require.Equal(t, createdAcc.CreatedAt, queriedAcc.CreatedAt)
+	require.Equal(t, createdAcc.Currency, queriedAcc.Currency)
 }
 
 func TestUpdateAccount(t *testing.T) {
@@ -46,11 +37,30 @@ func TestUpdateAccount(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedAcc)
-	require.Equal(t, updatedAcc.ID, createdAcc.ID)
-	require.Equal(t, updatedAcc.Owner, createdAcc.Owner)
-	require.Equal(t, updatedAcc.Balance, arg.Balance)
-	require.Equal(t, updatedAcc.CreatedAt, createdAcc.CreatedAt)
-	require.Equal(t, updatedAcc.Currency, createdAcc.Currency)
+	require.Equal(t, createdAcc.ID, updatedAcc.ID)
+	require.Equal(t, createdAcc.Owner, updatedAcc.Owner)
+	require.Equal(t, arg.Balance, updatedAcc.Balance)
+	require.Equal(t, createdAcc.CreatedAt, updatedAcc.CreatedAt)
+	require.Equal(t, createdAcc.Currency, updatedAcc.Currency)
+}
+
+func TestAddAccountBalance(t *testing.T) {
+	createdAcc := createRandomAccount(t)
+
+	arg := AddAccountBalanceParams{
+		ID:     createdAcc.ID,
+		Amount: randomInt(0, 1_000_000),
+	}
+
+	updatedAcc, err := testQueries.AddAccountBalance(context.Background(), arg)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, updatedAcc)
+	require.Equal(t, createdAcc.ID, updatedAcc.ID)
+	require.Equal(t, createdAcc.Owner, updatedAcc.Owner)
+	require.Equal(t, createdAcc.Balance+arg.Amount, updatedAcc.Balance)
+	require.Equal(t, createdAcc.CreatedAt, updatedAcc.CreatedAt)
+	require.Equal(t, createdAcc.Currency, updatedAcc.Currency)
 }
 
 func TestDeleteAccount(t *testing.T) {
@@ -106,20 +116,4 @@ func createRandomAccount(t *testing.T) Account {
 	require.NotZero(t, account.CreatedAt)
 
 	return account
-}
-
-func randomInt(min, max int64) int64 {
-	return min + rand.Int63n(max-min+1)
-}
-
-func randomString(n int) string {
-	var sb strings.Builder
-	k := len(alphabet)
-
-	for i := 0; i < n; i++ {
-		c := alphabet[rand.Intn(k)]
-		sb.WriteByte(c)
-	}
-
-	return sb.String()
 }
