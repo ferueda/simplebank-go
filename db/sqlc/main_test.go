@@ -22,7 +22,7 @@ var dbDriver string
 
 func init() {
 	env := os.Getenv("ENV")
-	if env == "dev" || env == "" || env == "test" {
+	if env == "dev" || env == "" {
 		err := godotenv.Load("../../.env")
 		if err != nil {
 			log.Fatal("Error loading .env file", err)
