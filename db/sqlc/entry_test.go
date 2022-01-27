@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,6 +41,17 @@ func TestListEntries(t *testing.T) {
 	require.Equal(t, entry.Amount, entries[0].Amount)
 	require.Equal(t, entry.CreatedAt, entries[0].CreatedAt)
 	require.Equal(t, entry.ID, entries[0].ID)
+}
+
+func TestDeleteEntry(t *testing.T) {
+	entry := createRandomEntry(t, createRandomAccount(t))
+	err := testQueries.DeleteEntry(context.Background(), entry.AccountID)
+	require.NoError(t, err)
+
+	queriedEntry, err := testQueries.GetEntry(context.Background(), entry.ID)
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.Empty(t, queriedEntry)
 }
 
 func createRandomEntry(t *testing.T, acc Account) Entry {

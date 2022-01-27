@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -52,6 +53,27 @@ func TestListTransfer(t *testing.T) {
 		require.NotEmpty(t, transfer)
 		require.True(t, transfer.FromAccountID == fromAcc.ID || transfer.ToAccountID == fromAcc.ID)
 	}
+}
+
+func TestDeleteTransfer(t *testing.T) {
+	var err error
+	transfer1 := createRandomTransfer(t, createRandomAccount(t), createRandomAccount(t))
+	err = testQueries.DeleteTransfer(context.Background(), transfer1.FromAccountID)
+	require.NoError(t, err)
+
+	queriedTransfer1, err := testQueries.GetTransfer(context.Background(), transfer1.ID)
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.Empty(t, queriedTransfer1)
+
+	transfer2 := createRandomTransfer(t, createRandomAccount(t), createRandomAccount(t))
+	err = testQueries.DeleteTransfer(context.Background(), transfer2.ToAccountID)
+	require.NoError(t, err)
+
+	queriedTransfer2, err := testQueries.GetTransfer(context.Background(), transfer1.ID)
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.Empty(t, queriedTransfer2)
 }
 
 func createRandomTransfer(t *testing.T, from, to Account) Transfer {

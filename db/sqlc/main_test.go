@@ -9,16 +9,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 const (
-	dbDriver = "postgres"
-	dbSource = "postgresql://root:admin123@localhost:5432/simple_bank?sslmode=disable"
 	alphabet = "abcdefghijklmnopqrstuvwxyz"
 )
 
+var dbAddr string
+var dbDriver string
+
 func init() {
+	env := os.Getenv("ENV")
+	if env == "dev" || env == "" || env == "test" {
+		err := godotenv.Load("../../.env")
+		if err != nil {
+			log.Fatal("Error loading .env file", err)
+		}
+	}
+
+	dbAddr = os.Getenv("DB_HOST")
+	dbDriver = os.Getenv("DB_DRIVER")
+
 	rand.Seed(time.Now().UnixNano())
 }
 
@@ -27,7 +40,7 @@ var testDB *sql.DB
 
 func TestMain(m *testing.M) {
 	var err error
-	testDB, err = sql.Open(dbDriver, dbSource)
+	testDB, err = sql.Open(dbDriver, dbAddr)
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
 	}
