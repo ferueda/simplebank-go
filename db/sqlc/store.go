@@ -32,6 +32,35 @@ func NewStore(db *sql.DB) *Store {
 	}
 }
 
+func (s *Store) DeleteAccountTx(ctx context.Context, accountId int64) error {
+	err := s.execTrx(ctx, func(q *Queries) error {
+		var err error
+
+		err = q.DeleteEntry(ctx, accountId)
+		if err != nil {
+			return err
+		}
+
+		err = q.DeleteTransfer(ctx, accountId)
+		if err != nil {
+			return err
+		}
+
+		err = q.DeleteAccount(ctx, accountId)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 	err := s.execTrx(ctx, func(q *Queries) error {
