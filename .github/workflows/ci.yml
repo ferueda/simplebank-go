@@ -14,8 +14,8 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: admin123
           POSTGRES_DB: simple_bank
         ports:
           - 5432:5432
@@ -47,4 +47,4 @@ jobs:
         env:
           ENV: test
           DB_DRIVER: postgres
-          DB_HOST: postgresql://test:test@localhost:5432/simple_bank?sslmode=disable
+          DB_HOST: postgresql://root:admin123@localhost:5432/simple_bank?sslmode=disable
