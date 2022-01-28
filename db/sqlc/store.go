@@ -107,7 +107,7 @@ func (s *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferT
 	})
 
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 
 	return result, nil
