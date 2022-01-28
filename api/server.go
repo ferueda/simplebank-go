@@ -19,7 +19,9 @@ func NewServer(store *db.Store) *Server {
 	r.GET("/accounts/:id", s.getAccount)
 	r.DELETE("/accounts/:id", s.deleteAccount)
 
-	// TODO: implement entries and transfers endpoints
+	r.POST("/transfers", s.createTransfer)
+	r.GET("/transfers", s.listTransfers)
+	r.GET("/transfers/:id", s.getTransfer)
 
 	s.router = r
 	return &s
