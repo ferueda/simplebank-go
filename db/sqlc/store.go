@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Store struct {
@@ -147,4 +149,16 @@ func (s *Store) execTrx(ctx context.Context, fn func(*Queries) error) error {
 	}
 
 	return tx.Commit()
+}
+
+func HashPassword(pass string) (string, error) {
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+	return string(hashedPass), nil
+}
+
+func ValidateHashedPassword(pass, hashedPass string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPass), []byte(pass))
 }
