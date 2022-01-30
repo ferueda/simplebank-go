@@ -2,16 +2,18 @@ package api
 
 import (
 	db "github.com/ferueda/simplebank-go/db/sqlc"
+	"github.com/ferueda/simplebank-go/token"
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	store  *db.Store
-	router *gin.Engine
+	store      *db.Store
+	tokenMaker token.Maker
+	router     *gin.Engine
 }
 
-func NewServer(store *db.Store) *Server {
-	s := Server{store: store}
+func NewServer(store *db.Store, tm token.Maker) (*Server, error) {
+	s := Server{store: store, tokenMaker: tm}
 	r := gin.Default()
 
 	r.POST("/accounts", s.createAccount)
@@ -24,9 +26,10 @@ func NewServer(store *db.Store) *Server {
 	r.GET("/transfers/:id", s.getTransfer)
 
 	r.POST("/users", s.createUser)
+	r.POST("/users/login", s.loginUser)
 
 	s.router = r
-	return &s
+	return &s, nil
 }
 
 func (s *Server) Start(addr string) error {
