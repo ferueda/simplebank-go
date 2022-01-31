@@ -2,15 +2,16 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	db "github.com/ferueda/simplebank-go/db/sqlc"
+	"github.com/ferueda/simplebank-go/token"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 )
 
 type createAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,oneof=CAD USD" `
 }
 
@@ -21,8 +22,10 @@ func (s *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authPayloadKey).(*token.Payload)
+
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    authPayload.Username,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -65,6 +68,14 @@ func (s *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authPayloadKey).(*token.Payload)
+
+	if account.Owner != authPayload.Username {
+		err := errors.New("wrong account id")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
@@ -92,7 +103,8 @@ func (s *Server) listAccounts(ctx *gin.Context) {
 		req.Offset = 0
 	}
 
-	arg := db.ListAccountsParams{Limit: req.Limit, Offset: req.Offset}
+	authPayload := ctx.MustGet(authPayloadKey).(*token.Payload)
+	arg := db.ListAccountsParams{Owner: authPayload.Username, Limit: req.Limit, Offset: req.Offset}
 
 	accounts, err := s.store.ListAccounts(ctx, arg)
 	if err != nil {
