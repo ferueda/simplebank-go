@@ -16,17 +16,19 @@ func NewServer(store *db.Store, tm token.Maker) (*Server, error) {
 	s := Server{store: store, tokenMaker: tm}
 	r := gin.Default()
 
-	r.POST("/accounts", s.createAccount)
-	r.GET("/accounts", s.listAccounts)
-	r.GET("/accounts/:id", s.getAccount)
-	r.DELETE("/accounts/:id", s.deleteAccount)
-
-	r.POST("/transfers", s.createTransfer)
-	r.GET("/transfers", s.listTransfers)
-	r.GET("/transfers/:id", s.getTransfer)
-
 	r.POST("/users", s.createUser)
 	r.POST("/users/login", s.loginUser)
+
+	authRoutes := r.Group("/").Use(authMiddleware(s.tokenMaker))
+
+	authRoutes.POST("/accounts", s.createAccount)
+	authRoutes.GET("/accounts", s.listAccounts)
+	authRoutes.GET("/accounts/:id", s.getAccount)
+	authRoutes.DELETE("/accounts/:id", s.deleteAccount)
+
+	authRoutes.POST("/transfers", s.createTransfer)
+	authRoutes.GET("/transfers", s.listTransfers)
+	authRoutes.GET("/transfers/:id", s.getTransfer)
 
 	s.router = r
 	return &s, nil
