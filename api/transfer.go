@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	db "github.com/ferueda/simplebank-go/db/sqlc"
+	"github.com/ferueda/simplebank-go/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +25,15 @@ func (s *Server) createTransfer(ctx *gin.Context) {
 		return
 	}
 
-	if !s.validateAccount(ctx, req.FromAccountId, req.Currency) {
+	fromAcc, isValid := s.validateAccount(ctx, req.FromAccountId, req.Currency)
+	if !isValid {
+		return
+	}
+
+	authPayload := ctx.MustGet(authPayloadKey).(*token.Payload)
+	if fromAcc.Owner != authPayload.Username {
+		err := errors.New("wrong origin account")
+		ctx.JSON(http.StatusForbidden, errorResponse(err))
 		return
 	}
 
@@ -32,7 +41,8 @@ func (s *Server) createTransfer(ctx *gin.Context) {
 		return
 	}
 
-	if !s.validateAccount(ctx, req.ToAccountId, req.Currency) {
+	_, isValid = s.validateAccount(ctx, req.ToAccountId, req.Currency)
+	if !isValid {
 		return
 	}
 
@@ -131,25 +141,25 @@ func (s *Server) listTransfers(ctx *gin.Context) {
 	})
 }
 
-func (s *Server) validateAccount(ctx *gin.Context, accountId int64, currency string) bool {
+func (s *Server) validateAccount(ctx *gin.Context, accountId int64, currency string) (db.Account, bool) {
 	account, err := s.store.GetAccount(ctx, accountId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return false
+			return account, false
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return false
+		return account, false
 	}
 
 	if account.Currency != currency {
 		err := fmt.Errorf("account [%d] currency mismatch: transaction must be in %s", accountId, account.Currency)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return false
+		return account, false
 	}
 
-	return true
+	return account, true
 }
 
 func (s *Server) validateFunds(ctx *gin.Context, accountId, amount int64) bool {
